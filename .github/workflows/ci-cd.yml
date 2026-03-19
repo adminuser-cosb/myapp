@@ -15,18 +15,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Build Docker image locally
-      - name: Build Docker image
-        run: |
-          docker build -t myapp:latest .
-
-      # 3. Run tests inside Docker
-      - name: Run tests
-        run: |
-          docker run --rm myapp:latest pytest tests
-
-      # 4. Deploy to remote server (LAN内サーバ)
-      - name: Deploy to server
+      # 2. Deploy to remote server (build & run on server)
+      - name: Build, test, and deploy on server
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: 192.168.121.50
@@ -35,6 +25,12 @@ jobs:
             ${{ secrets.DEPLOY_KEY }}
           port: 22
           script: |
+            # プロジェクトディレクトリに移動
+            cd /home/adminuser/myapp || exit 1
+
+            # Dockerイメージをビルド
+            docker build -t myapp:latest .
+
             # 停止・削除済みコンテナを削除
             docker stop myapp_cicd || true
             docker rm myapp_cicd || true
@@ -42,3 +38,6 @@ jobs:
 
             # サーバ上でコンテナを起動
             docker run -d --name myapp_cicd -p 5001:5000 myapp:latest
+
+            # テストをコンテナ内で実行
+            docker run --rm myapp:latest pytest tests
