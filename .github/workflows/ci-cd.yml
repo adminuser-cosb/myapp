@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-test-deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, windows]
 
     steps:
       # 1. リポジトリをチェックアウト
@@ -25,12 +25,12 @@ jobs:
         run: |
           docker run --rm myapp:latest pytest tests
 
-      # 4. Deploy to remote server
+      # 4. Deploy to remote server (LAN内サーバ)
       - name: Deploy to server
         uses: appleboy/ssh-action@v0.1.8
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
+          host: 192.168.121.50
+          username: adminuser
           key: |
             ${{ secrets.DEPLOY_KEY }}
           port: 22
@@ -40,7 +40,5 @@ jobs:
             docker rm myapp_cicd || true
             docker rmi myapp:latest || true
 
-            # サーバ上でコンテナを起動
-            docker run -d --name myapp_cicd -p 5001:5000 myapp:latest
             # サーバ上でコンテナを起動
             docker run -d --name myapp_cicd -p 5001:5000 myapp:latest
