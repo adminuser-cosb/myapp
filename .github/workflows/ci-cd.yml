@@ -8,36 +8,29 @@ on:
 
 jobs:
   build-test-deploy:
-    runs-on: [self-hosted, windows]
+    runs-on: [self-hosted, linux]
 
     steps:
       # 1. リポジトリをチェックアウト
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Deploy to remote server (build & run on server)
-      - name: Build, test, and deploy on server
-        uses: appleboy/ssh-action@v0.1.8
-        with:
-          host: 192.168.121.50
-          username: adminuser
-          key: |
-            ${{ secrets.DEPLOY_KEY }}
-          port: 22
-          script: |
-            # プロジェクトディレクトリに移動
-            cd /home/adminuser/myapp || exit 1
+      # 2. Build, test, and deploy on server
+      - name: Build, test, and deploy
+        run: |
+          # プロジェクトディレクトリに移動
+          cd /home/adminuser/myapp || exit 1
 
-            # Dockerイメージをビルド
-            docker build -t myapp:latest .
+          # Dockerイメージをビルド
+          docker build -t myapp:latest .
 
-            # 停止・削除済みコンテナを削除
-            docker stop myapp_cicd || true
-            docker rm myapp_cicd || true
-            docker rmi myapp:latest || true
+          # 停止・削除済みコンテナを削除
+          docker stop myapp_cicd || true
+          docker rm myapp_cicd || true
+          docker rmi myapp:latest || true
 
-            # サーバ上でコンテナを起動
-            docker run -d --name myapp_cicd -p 5001:5000 myapp:latest
+          # サーバ上でコンテナを起動
+          docker run -d --name myapp_cicd -p 5001:5000 myapp:latest
 
-            # テストをコンテナ内で実行
-            docker run --rm myapp:latest pytest tests
+          # テストをコンテナ内で実行
+          docker run --rm myapp:latest pytest tests
