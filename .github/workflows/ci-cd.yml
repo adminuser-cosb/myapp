@@ -1,22 +1,31 @@
-- name: Build, test, and deploy
-  uses: appleboy/ssh-action@v0.1.8
-  with:
-    host: 192.168.121.50
-    username: adminuser
-    key: ${{ secrets.DEPLOY_KEY }}
-    port: 22
-    script: |
-      cd /home/adminuser/myapp || exit 1
+name: CI/CD Pipeline
 
-      # Docker イメージのビルド
-      docker build -t myapp:latest .
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-      # 古いコンテナを停止・削除
-      docker stop myapp_cicd || true
-      docker rm myapp_cicd || true
+jobs:
+  build-test-deploy:
+    runs-on: [self-hosted, linux]
 
-      # 新しいコンテナを起動
-      docker run -d --name myapp_cicd -p 5001:5000 myapp:latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      # コンテナ内でテストを実行
-      docker exec myapp_cicd pytest tests
+      - name: Build, test, and deploy on server
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: 192.168.121.50
+          username: adminuser
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: 22
+          script: |
+            cd /home/adminuser/myapp || exit 1
+            docker build -t myapp:latest .
+            docker stop myapp_cicd || true
+            docker rm myapp_cicd || true
+            docker rmi myapp:latest || true
+            docker run -d --name myapp_cicd -p 5001:5000 myapp:latest
+            docker run --rm myapp:latest pytest tests
