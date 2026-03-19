@@ -15,22 +15,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Build, test, and deploy on server
-      - name: Build, test, and deploy
+      # 2. Build, test, and deploy
+      - name: Build, test, and deploy Docker container
         run: |
           # プロジェクトディレクトリに移動
           cd /home/adminuser/myapp || exit 1
 
-          # Dockerイメージをビルド
+          # Dockerイメージをビルド（不要なファイルは .dockerignore で除外）
           docker build -t myapp:latest .
 
-          # 停止・削除済みコンテナを削除
+          # 既存コンテナがあれば停止・削除
           docker stop myapp_cicd || true
           docker rm myapp_cicd || true
           docker rmi myapp:latest || true
 
-          # サーバ上でコンテナを起動
+          # 新しいコンテナを起動
           docker run -d --name myapp_cicd -p 5001:5000 myapp:latest
 
-          # テストをコンテナ内で実行
+          # コンテナ内でテストを実行
           docker run --rm myapp:latest pytest tests
