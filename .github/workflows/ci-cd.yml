@@ -31,15 +31,16 @@ jobs:
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
+          key: |
+            ${{ secrets.DEPLOY_KEY }}
+          port: 22
           script: |
             # 停止・削除済みコンテナを削除
             docker stop myapp_cicd || true
             docker rm myapp_cicd || true
             docker rmi myapp:latest || true
 
-            # GitHub Actions から転送したイメージをサーバでロード（ビルド不要）
-            # docker save/load を使う場合はここで処理
-
+            # サーバ上でコンテナを起動
+            docker run -d --name myapp_cicd -p 5001:5000 myapp:latest
             # サーバ上でコンテナを起動
             docker run -d --name myapp_cicd -p 5001:5000 myapp:latest
